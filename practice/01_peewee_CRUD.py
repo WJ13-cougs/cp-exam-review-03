@@ -15,12 +15,96 @@ It should have the following columns:
     - cat_age
     - owner_name
 '''
+import peewee as p
 
+db = p.SqliteDatabase('cats.db')
+
+class Cats(p.Model):
+    cat_id = p.AutoField(primary_key=True)
+    cat_name = p.CharField()
+    cat_age = p.IntegerField()
+    owner_name = p.CharField()
+
+    class Meta:
+        database = db
+
+    def get_info(self):
+        return f"{self.cat_name}, age {self.cat_age} is owned by {self.owner_name}"
+        
+    @classmethod
+    def create(cls, **query):
+        cat_name = query['cat_name']
+        owner_name = query.get('owner_name')
+
+        # make them capitalized and strip extra space
+        # title will capitalize every separate word
+        cat_name = cat_name.strip().title()
+        owner_name = owner_name.strip().title()
+
+        # put the changed values back into the dictionary before calling super
+        query['cat_name'] = cat_name
+        query['owner_name'] = owner_name
+
+        return super().create(**query)
+
+
+db.connect()
+db.create_tables([Cats])
 
 
 # 2. CREATE A ROW USING INPUTS
 # Ask the user for inputs for the cat_name, owner_name, and age to create new rows
 # in the database
+
+while True:
+    
+    print("Welcome to Cat Land! Choose an option:")
+    print("1. Add a new cat: ")
+    print("2. See all cats")
+    print("3. See all cats of specific owner")
+    print("4. See the youngest cat")
+    print("exit - leave the program")
+    option = input("Enter an option: ")
+
+    if option == '1':
+        input_cat_name = input("Enter a cat name: ")
+        input_owner_name = input("Enter a owner name: ")
+        input_cat_age = int(input("Enter a cat age: "))
+
+        Cats.create(cat_name=input_cat_name, owner_name=input_owner_name, cat_age=input_cat_age)
+
+    elif option == '2':
+        all_cats = Cats.select().order_by(Cats.cat_name.desc())
+        for cat_obj in all_cats:
+            print(cat_obj.get_info())
+        print()
+
+    elif option == '3':
+        owner_name = input("Enter an owner name to see all their cats: ")
+        cats_of_owner = Cats.select().where(Cats.owner_name == owner_name)
+
+        if len(cats_of_owner) > 0:
+            print(f"These are {owner_name}'s cats")
+            for cat_obj in cats_of_owner:
+                print(cat_obj.get_info())
+
+        else:
+            print(f"Couldn't find any cats with the owners name of {owner_name}")
+
+    elif option == '4':
+        youngest_cat = Cats.select().order_by(Cats.cat_age.asc()).first()
+        print("This is the youngest cat!")
+        print(youngest_cat.get_info())
+
+
+    elif option.lower() == 'exit':
+        print("Thanks for using the program")
+        break
+
+    else:
+        print("Invalid choice, choose again!")
+
+
 
 
 
@@ -31,6 +115,7 @@ It should have the following columns:
 # the first letter is capitalized and that it is stored without leading or
 # trailing spaces.
 
+# .capitalize() .strip()
 
 
 # 4. ADD A GET_INFO METHOD TO THE CAT CLASS
